@@ -1,0 +1,69 @@
+steps:
+  # run from the start
+  # this will decrypt the encrypted file and secret
+  - id: 'prepare-secret'
+    name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud secrets versions access latest --project=${PROJECT_ID} --secret=${_ENV}-${_SECRET_NAME} --format='get(payload.data)' | tr '_-' '/+' | base64 -d > .env
+  # run from the start
+  # this will (create and) change cloudsql folder permission
+  - id: 'prepare-socket-folder'
+    name: 'gcr.io/cloud-builders/gcloud'
+    waitFor: ['-']
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        mkdir /cloudsql || true
+        chmod -R 777 /cloudsql
+    volumes:
+      - name: cloudsql
+        path: /cloudsql
+
+  # this start sql-proxy for migration task
+  - id: 'start-cloudsql-proxy'
+    name: '${_CLOUD_SQL_PROXY_IMAGE_NAME}'
+    waitFor: ['prepare-socket-folder']
+    args:
+      - '/cloud_sql_proxy'
+      - '-dir=/cloudsql'
+      - '-instances=${_CLOUD_SQL_INSTANCES}'
+    volumes:
+      - name: cloudsql
+        path: /cloudsql
+
+  # do migrate
+  - id: 'migrate-database'
+    name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    waitFor: ['prepare-secret', 'prepare-socket-folder']
+    args:
+      - '-c'
+      - |
+        docker run --rm \
+          -v cloudsql:/cloudsql \
+          -v $(pwd)/prisma:/prisma/prisma \
+          -v $(pwd)/.env:/prisma/.env \
+          ${_PRISMA_IMAGE_NAME} yarn prisma migrate deploy
+    volumes:
+      - name: cloudsql
+        path: /cloudsql
+
+  # this kill sql-proxy
+  - id: 'kill-cloudsql-proxy'
+    name: 'gcr.io/cloud-builders/docker'
+    waitFor: ['migrate-database']
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - 'docker ps -q --filter ancestor="${_CLOUD_SQL_PROXY_IMAGE_NAME}" | xargs docker stop'
+
+substitutions:
+  _ENV: staging
+  _SECRET_NAME: abo-api
+  _CLOUD_SQL_INSTANCES: staging-smaku-abo:asia-northeast1:abo-db-staging
+  _CLOUD_SQL_PROXY_IMAGE_NAME: gcr.io/cloudsql-docker/gce-proxy:1.23.0
+  _PRISMA_IMAGE_NAME: gcr.io/azoom-x/prisma

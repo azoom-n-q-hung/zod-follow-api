@@ -1,0 +1,279 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider                         = "zod-prisma-types"
+  output                           = "../lib/abo/schemas"
+  useMultipleFiles                 = false
+  createInputTypes                 = false
+  createModelTypes                 = true
+  addInputTypeValidation           = true
+  addIncludeType                   = false
+  addSelectType                    = false
+  createOptionalDefaultValuesTypes = true
+  createRelationValuesTypes        = true
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Staff {
+  id              Int             @id @default(autoincrement())
+  isEnabled       Boolean         @default(true) @map("is_enabled") @db.TinyInt
+  name            String          @map("name") @db.VarChar(255) /// @zod.string.min(1, { message: "未入力です" })
+  nameKana        String          @map("name_kana") @db.VarChar(255) /// @zod.string.min(1, { message: "未入力です" }).regex(/^[ァ-ンｧ-ﾝﾞﾟー 　]*$/, { message: "カナでご入力してください" })
+  createdDatetime DateTime        @default(now()) @map("created_datetime")
+  updatedDatetime DateTime        @default(now()) @updatedAt @map("updated_datetime")
+  createdBookings Booking[]       @relation("StaffCreatedBooking")
+  updatedBookings Booking[]       @relation("StaffUpdatedBooking")
+  bookingDetails  BookingDetail[]
+
+  @@map("staff")
+}
+
+/// @zod.import(["import { validIntegerNumber } from '../schema'"])
+model Room {
+  id                    Int             @id @default(autoincrement())
+  isEnabled             Boolean         @default(true) @map("is_enabled") @db.TinyInt
+  name                  String          @unique @map("name") @db.VarChar(255) /// @zod.string.min(1, { message: "未入力です" })
+  displayName           String?         @map("display_name") @db.VarChar(255)
+  sFormCapacity         Int?            @map("s_form_capacity") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  mouthFormCapacity     Int?            @map("mouth_form_capacity") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  theaterFormCapacity   Int?            @map("theater_form_capacity") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  interviewFormCapacity Int?            @map("interview_form_capacity") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  partyFormCapacity     Int?            @map("party_form_capacity") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  otherFormCapacity     Int?            @map("other_form_capacity") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  createdDatetime       DateTime        @default(now()) @map("created_datetime")
+  updatedDatetime       DateTime        @default(now()) @updatedAt @map("updated_datetime")
+  bookingDetails        BookingDetail[]
+  roomCharges           RoomCharge[]
+
+  @@map("room")
+}
+
+/// @zod.import(["import { generateDecimalGenerator, validDateField } from '../schema'"])
+model RoomCharge {
+  id              Int       @id @default(autoincrement())
+  roomId          Int       @map("room_id")
+  room            Room      @relation(fields: [roomId], references: [id])
+  basicPrice      Decimal   @map("basic_price") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  extensionPrice  Decimal   @map("extension_price") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  allDayPrice     Decimal   @map("all_day_price") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  subtotalType    Int       @default(2) @map("subtotal_type") @db.TinyInt
+  startDate       DateTime  @map("start_date") @db.Date /// @zod.custom.use(validDateField({ invalid_date: "未入力です", invalid_type_error: "未入力です", required_error: "未入力です" }))
+  endDate         DateTime? @map("end_date") @db.Date
+  createdDatetime DateTime  @default(now()) @map("created_datetime")
+  updatedDatetime DateTime  @default(now()) @updatedAt @map("updated_datetime")
+
+  @@map("room_charge")
+}
+
+model Customer {
+  id              Int       @id @default(autoincrement()) /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください', min: 1, minMessage: "最低限1個の入力が必要です" }))
+  isEnabled       Boolean   @default(true) @map("is_enabled") @db.TinyInt
+  name            String    @map("name") @db.VarChar(255) /// @zod.string.min(1, { message: "未入力です" })
+  nameKana        String?   @map("name_kana") @db.VarChar(255)
+  postalCode      String?   @map("postal_code") @db.VarChar(20) /// @zod.string.regex(/^([0-9]{3}-?[0-9]{4})*$/, { message: "郵便番号をご入力ください" })
+  address         String?   @map("address") @db.VarChar(255)
+  subAddress      String?   @map("sub_address") @db.VarChar(255)
+  tel             String?   @map("tel") @db.VarChar(20) /// @zod.string.regex(/^[\d-]*$/, { message: "電話番号を入力してください" })
+  fax             String?   @map("fax") @db.VarChar(20) /// @zod.string.regex(/^[\d-]*$/, { message: "Fax番号を入力してください" })
+  contactName1    String?   @map("contact_name_1") @db.VarChar(255)
+  contactTel1     String?   @map("contact_tel_1") @db.VarChar(20) /// @zod.string.regex(/^[\d-]*$/, { message: "電話番号を入力してください" })
+  contactMail1    String?   @map("contact_mail_1") @db.VarChar(255) /// @zod.string.regex(/^([\w-.]+@([\w-]+\.)+[\w-]{2,})*$/, {message: "メールアドレスを入力してください" } )
+  contactName2    String?   @map("contact_name_2") @db.VarChar(255)
+  contactTel2     String?   @map("contact_tel_2") @db.VarChar(20) /// @zod.string.regex(/^[\d-]*$/, { message: "電話番号を入力してください" })
+  contactMail2    String?   @map("contact_mail_2") @db.VarChar(255) /// @zod.string.regex(/^([\w-.]+@([\w-]+\.)+[\w-]{2,})*$/, {message: "メールアドレスを入力してください" } )
+  contactName3    String?   @map("contact_name_3") @db.VarChar(255)
+  contactTel3     String?   @map("contact_tel_3") @db.VarChar(20) /// @zod.string.regex(/^[\d-]*$/, { message: "電話番号を入力してください" })
+  contactMail3    String?   @map("contact_mail_3") @db.VarChar(255) /// @zod.string.regex(/^([\w-.]+@([\w-]+\.)+[\w-]{2,})*$/, {message: "メールアドレスを入力してください" } )
+  memo1           String?   @map("memo_1") @db.Text
+  memo2           String?   @map("memo_2") @db.Text
+  createdDatetime DateTime  @default(now()) @map("created_datetime")
+  updatedDatetime DateTime  @default(now()) @updatedAt @map("updated_datetime")
+  bookings        Booking[]
+
+  @@map("customer")
+}
+
+model Booking {
+  id              Int             @id @default(autoincrement())
+  createdStaffId  Int             @map("created_staff_id") /// @zod.custom.use(validIntegerNumber({ message: '未入力です' }))
+  createdStaff    Staff           @relation("StaffCreatedBooking", fields: [createdStaffId], references: [id])
+  updatedStaffId  Int             @map("updated_staff_id") /// @zod.custom.use(validIntegerNumber({ message: '未入力です' }))
+  updatedStaff    Staff           @relation("StaffUpdatedBooking", fields: [updatedStaffId], references: [id])
+  customerId      Int             @map("customer_id") /// @zod.custom.use(validIntegerNumber({ message: '未入力です' }))
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  customerName    String?         @map("customer_name") @db.VarChar(255)
+  customerTel     String?         @map("customer_tel") @db.VarChar(20) /// @zod.string.regex(/^[\d-]*$/, { message: "電話番号を入力してください" })
+  customerFax     String?         @map("customer_fax") @db.VarChar(20) /// @zod.string.regex(/^[\d-]*$/, { message: "Fax番号を入力してください" })
+  customerMail    String?         @map("customer_mail") @db.VarChar(255) /// @zod.string.regex(/^([\w-.]+@([\w-]+\.)+[\w-]{2,})*$/, {message: "メールアドレスを入力してください" } )
+  customerRepName String?         @map("customer_rep_name") @db.VarChar(255)
+  note            String?         @map("note") @db.VarChar(200) /// @zod.string.max(200, { message: "200文字以下ご入力してください" })
+  createdDatetime DateTime        @default(now()) @map("created_datetime")
+  updatedDatetime DateTime        @default(now()) @updatedAt @map("updated_datetime")
+  bookingDetails  BookingDetail[]
+
+  @@map("booking")
+}
+
+model BookingDetail {
+  id                           Int                    @id @default(autoincrement())
+  bookingId                    Int                    @map("booking_id")
+  booking                      Booking                @relation(fields: [bookingId], references: [id])
+  roomId                       Int                    @map("room_id")
+  room                         Room                   @relation(fields: [roomId], references: [id])
+  title                        String?                @map("title") @db.VarChar(255)
+  startDatetime                DateTime               @map("start_datetime") /// @zod.custom.use(validDateField({ invalid_date: "未入力です", invalid_type_error: "未入力です", required_error: "未入力です" }))
+  endDatetime                  DateTime               @map("end_datetime") /// @zod.custom.use(validDateField({ invalid_date: "未入力です", invalid_type_error: "未入力です", required_error: "未入力です" }))
+  status                       Int                    @default(1) @map("status") @db.TinyInt
+  cancelType                   Int                    @map("cancel_type") @db.TinyInt
+  cancellationFeeDays          Int?                   @map("cancellation_fee_days") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください', min: 1, minMessage: "最低限1個の入力が必要です" }))
+  isCocktailStyle              Boolean                @default(false) @map("is_cocktail_style") @db.TinyInt
+  scheduledReplyDate           DateTime?              @map("scheduled_reply_date") @db.Date /// @zod.custom.use(validDateField({ invalid_date: "未入力です", invalid_type_error: "未入力です", required_error: "未入力です" }))
+  layoutType                   Int?                   @map("layout_type") @db.TinyInt
+  guestCount                   Int?                   @map("guest_count") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  extraTableCount              Int?                   @map("extra_table_count") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  extraChairCount              Int?                   @map("extra_chair_count") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  layoutLocation               String?                @map("layout_location") @db.VarChar(255)
+  note                         String?                @map("note") @db.Text
+  memo                         String?                @map("memo") @db.Text
+  basicAmount                  Decimal?               @map("basic_amount") @db.Decimal(12, 0)
+  extensionAmount              Decimal?               @map("extension_amount") @db.Decimal(12, 0)
+  allDayAmount                 Decimal?               @map("all_day_amount") @db.Decimal(12, 0)
+  subtotalType                 Int?                   @map("subtotal_type")
+  discountAmount               Decimal?               @map("discount_amount") @db.Decimal(12, 0)
+  depositAmount                Decimal?               @map("deposit_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  taxRate                      Int?                   @map("tax_rate") @db.SmallInt
+  cancelPrice                  Decimal?               @map("cancel_price") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  cancelDatetime               DateTime?              @map("cancel_datetime") /// @zod.custom.use(validDateField({ invalid_date: "未入力です", invalid_type_error: "未入力です", required_error: "未入力です" }))
+  cancelRequesterName          String?                @map("cancel_requester_name") @db.VarChar(255)
+  cancelRequesterTel           String?                @map("cancel_requester_tel") @db.VarChar(255) /// @zod.string.regex(/^[\d-]*$/, { message: "電話番号を入力してください" })
+  cancelNote                   String?                @map("cancel_note") @db.VarChar(255)
+  cancelStaffId                Int?                   @map("cancel_staff_id")
+  totalServiceWithoutTaxAmount Decimal?               @default(0) @map("total_service_without_tax_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  staff                        Staff?                 @relation(fields: [cancelStaffId], references: [id])
+  createdDatetime              DateTime               @default(now()) @map("created_datetime")
+  updatedDatetime              DateTime               @default(now()) @updatedAt @map("updated_datetime")
+  bookingDetailServices        BookingDetailService[]
+  invoiceItems                 InvoiceItem[]
+
+  @@map("booking_detail")
+}
+
+model BookingDetailService {
+  id              Int           @id @default(autoincrement())
+  bookingDetailId Int           @map("booking_detail_id")
+  bookingDetail   BookingDetail @relation(fields: [bookingDetailId], references: [id])
+  serviceId       Int           @map("service_id")
+  service         Service       @relation(fields: [serviceId], references: [id])
+  price           Decimal       @map("price") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  usageCount      Int           @map("usage_count") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  createdDatetime DateTime      @default(now()) @map("created_datetime")
+  updatedDatetime DateTime      @default(now()) @updatedAt @map("updated_datetime")
+
+  @@map("booking_detail_service")
+}
+
+model Service {
+  id                    Int                    @id @default(autoincrement())
+  isEnabled             Boolean                @default(true) @map("is_enabled") @db.TinyInt
+  name                  String                 @map("name") @db.VarChar(255) /// @zod.string.min(1, { message: "未入力です" })
+  type                  Int                    @map("type") @db.TinyInt /// @zod.number.min(1, { message: "未入力です" })
+  unitPrice             Decimal                @map("unit_price") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  subtotalType          Int                    @default(2) @map("subtotal_type") @db.TinyInt /// @zod.number.min(1, { message: "未入力です" })
+  startDate             DateTime?              @map("start_date") @db.Date
+  locationType          Int                    @default(1) @map("location_type") /// @zod.number.min(1, { message: "未入力です" })
+  hasStockManagement    Boolean?               @map("has_stock_management")
+  stockCount            Int?                   @map("stock_count") /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください', min: 1, minMessage: "最低限1個の入力が必要です" }))
+  itemType              Int?                   @map("item_type") @db.TinyInt/// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください' }))
+  createdDatetime       DateTime               @default(now()) @map("created_datetime")
+  updatedDatetime       DateTime               @default(now()) @updatedAt @map("updated_datetime")
+  bookingDetailServices BookingDetailService[]
+  serviceCharges        ServiceCharge[]
+
+  @@map("service")
+}
+
+model ServiceCharge {
+  id              Int       @id @default(autoincrement())
+  serviceId       Int       @map("service_id")
+  service         Service   @relation(fields: [serviceId], references: [id])
+  unitPrice       Decimal   @map("unit_price") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  startDate       DateTime  @map("start_date") @db.Date
+  endDate         DateTime? @map("end_date") @db.Date
+  createdDatetime DateTime  @default(now()) @map("created_datetime")
+  updatedDatetime DateTime  @default(now()) @updatedAt @map("updated_datetime")
+
+  @@map("service_charge")
+}
+
+model InvoiceItem {
+  id                       Int            @id @default(autoincrement())
+  bookingDetailId          Int?           @map("booking_detail_id")
+  bookingDetail            BookingDetail? @relation(fields: [bookingDetailId], references: [id])
+  invoiceId                Int?           @map("invoice_id")
+  invoice                  Invoice?       @relation(fields: [invoiceId], references: [id])
+  name                     String         @map("name") @db.VarChar(255) /// @zod.string.min(1, { message: "未入力です" })
+  type                     Int            @map("type") @db.TinyInt
+  serviceId                Int            @map("service_id") /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください', min: 1, minMessage: "最低限1個の入力が必要です" }))
+  unitAmount               Decimal        @map("unit_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  taxAmount                Decimal        @map("tax_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  count                    Decimal        @map("count") @db.Decimal(12, 1) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  subtotalWithoutTaxAmount Decimal        @default(0) @map("subtotal_without_tax_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  subtotalTaxAmount        Decimal        @default(0) @map("subtotal_tax_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  subtotalAmount           Decimal        @map("subtotal_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  createdDatetime          DateTime       @default(now()) @map("created_datetime")
+  updatedDatetime          DateTime       @default(now()) @updatedAt @map("updated_datetime")
+
+  @@map("invoice_item")
+}
+
+model Invoice {
+  id                         Int           @id @default(autoincrement())
+  voucherNum                 Int?          @map("voucher_num") /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください'}))
+  segmentNum                 Int           @default(1) @map("segment_num") @db.SmallInt /// @zod.custom.use(validIntegerNumber({ message: '自然数でご入力ください'}))
+  bookingId                  Int?          @map("booking_id")
+  status                     Int           @default(1) @map("status") @db.TinyInt
+  paymentDate                DateTime?     @map("payment_date") @db.Date
+  dueDate                    DateTime?     @map("due_date") @db.Date
+  proviso                    Int           @default(0) @map("proviso") @db.TinyInt
+  recipientName              String?       @map("recipient_name") @db.VarChar(255)
+  isPastRevision             Boolean       @default(false) @map("is_past_revision") @db.TinyInt
+  pastInvoiceId              Int?          @map("past_invoice_id")
+  settlementWithoutTaxAmount Decimal       @default(0) @map("settlement_without_tax_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  settlementAmount           Decimal       @default(0) @map("settlement_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  serviceWithoutTaxAmount    Decimal       @default(0) @map("service_without_tax_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  serviceAmount              Decimal       @default(0) @map("service_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  discountWithoutTaxAmount   Decimal       @default(0) @map("discount_without_tax_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  discountAmount             Decimal       @default(0) @map("discount_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  depositAmount              Decimal       @default(0) @map("deposit_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  totalWithoutTaxAmount      Decimal       @default(0) @map("total_without_tax_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  totalTaxAmount             Decimal       @default(0) @map("total_tax_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  totalAmount                Decimal       @default(0) @map("total_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  cashPaymentAmount          Decimal       @default(0) @map("cash_payment_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  creditPaymentAmount        Decimal       @default(0) @map("credit_payment_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  cardPaymentAmount          Decimal       @default(0) @map("card_payment_amount") @db.Decimal(12, 0) /// @zod.custom.use(generateDecimalGenerator({ message: "数字でご入力ください"}))
+  createdStaffId             Int?          @map("created_staff_id") /// @zod.custom.use(validIntegerNumber({ message: '未入力です' }))
+  updatedStaffId             Int?          @map("updated_staff_id")
+  createdDatetime            DateTime      @default(now()) @map("created_datetime")
+  updatedDatetime            DateTime      @default(now()) @updatedAt @map("updated_datetime")
+  invoiceItems               InvoiceItem[]
+
+  @@map("invoice")
+}
+
+model Holiday {
+  id              Int      @id @default(autoincrement())
+  date            DateTime @map("date") @db.Date /// @zod.date({ required_error: "未入力です" })
+  createdDatetime DateTime @default(now()) @map("created_datetime")
+  updatedDatetime DateTime @default(now()) @updatedAt @map("updated_datetime")
+
+  @@map("holiday")
+}

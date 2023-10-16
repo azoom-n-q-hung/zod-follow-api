@@ -1,0 +1,53 @@
+steps:
+  # run from the start
+  # this will decrypt the encrypted file and secret
+  - id: 'prepare-secret'
+    name: 'gcr.io/cloud-builders/gcloud'
+    waitFor: ['-']
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud secrets versions access latest --project=${PROJECT_ID} --secret=${_ENV}-${_SECRET_NAME} --format='get(payload.data)' | tr '_-' '/+' | base64 -d > .env
+        gcloud secrets versions access latest --project=azoom-x --secret=azoom-github-pkg-npmrc --format='get(payload.data)' | tr '_-' '/+' | base64 -d > .npmrc
+
+  # this creates simplified version of package.json
+  - id: prepare-build
+    name: gcr.io/azoom-x/jq
+    waitFor: ['-']
+    entrypoint: /bin/sh
+    args:
+      - -c
+      - jq '{ dependencies, devDependencies }' < package.json > package.deps.json
+
+  # this builds app docker image
+  - id: 'build-app-image'
+    name: 'gcr.io/kaniko-project/executor:latest'
+    waitFor: ['prepare-build']
+    args:
+      - --dockerfile=${_APP_DOCKER_FILE}
+      - --destination=gcr.io/${PROJECT_ID}/${_ENV}-${_CLOUD_RUN_SERVICE_NAME}:latest
+      - --destination=gcr.io/${PROJECT_ID}/${_ENV}-${_CLOUD_RUN_SERVICE_NAME}:$TAG_NAME
+      - --cache=true
+      - --cache-ttl=336h
+
+  # deploy container image to Cloud Run
+  - id: 'deploy'
+    name: gcr.io/cloud-builders/gcloud
+    waitFor: ['build-app-image']
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        gcloud run deploy ${_ENV}-${_CLOUD_RUN_SERVICE_NAME} \
+          --platform managed \
+          --region asia-northeast1 \
+          --allow-unauthenticated \
+          --image gcr.io/$PROJECT_ID/${_ENV}-${_CLOUD_RUN_SERVICE_NAME}:$TAG_NAME \
+          --add-cloudsql-instances ${_INSTANCE_CONNECTION_NAME}
+substitutions:
+  _ENV: staging
+  _SECRET_NAME: abo-api
+  _APP_DOCKER_FILE: ./cicd/release/Dockerfile
+  _CLOUD_RUN_SERVICE_NAME: abo-api
+  _INSTANCE_CONNECTION_NAME: staging-smaku-abo:asia-northeast1:abo-db-staging
