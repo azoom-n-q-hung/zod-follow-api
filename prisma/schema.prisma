@@ -25,13 +25,13 @@ datasource db {
 
 model Customer {
   id              Int      @id @default(autoincrement())
-  name            String   @db.VarChar(255) /// @zod.string.min(1, { message: "Name is required." })
-  nameKana        String   @map("name_kana") @db.VarChar(255) /// @zod.string.min(1, { message: "未入力です" }).regex(/^[ァ-ンｧ-ﾝﾞﾟー 　]*$/, { message: "カナでご入力してください" })
-  age             Int?     @db.Int /// @zod.number({ invalid_type_error: "Name is required" })
-  email           String   @unique @db.VarChar(255) /// @zod.string({ required_error: "Email is required" }).email({ message: "Must be a valid e-mail." }).max(255, { message: "Max 255 characters." })
+  name            String   @db.VarChar(255) /// @zod.string.min(1, { message: "Name is required" })
+  nameKana        String   @map("name_kana") @db.VarChar(255) /// @zod.string.min(1, { message: "nameKana is required" }).regex(/^[ァ-ンｧ-ﾝﾞﾟー 　]*$/, { message: "Name Kana should be kana characters" })
+  age             Int?     @db.Int /// @zod.number({ invalid_type_error: "Needs to be digits" })
+  email           String   @unique @db.VarChar(255) /// @zod.string({ required_error: "Email is required" }).email({ message: "Must be a valid email" }).max(255, { message: "Max 255 characters" })
   birthday        String?  @db.VarChar(10) /// @zod.string.regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Birthday needs to be yyyy-MM-dd format." })
-  type            Int?     @default(1) @db.TinyInt /// @zod.number({ required_error: "Type is required", invalid_type_error: "Needs to be digits" }).min(1, { message: "Min 1" }).max(2, { message: "Max 2" })
-  status          Boolean  @db.TinyInt /// @zod.custom.use(z.boolean({ required_error: "Status is required." }))
+  type            Int      @db.TinyInt @default(1) /// @zod.number({ required_error: "Type is required", invalid_type_error: "Needs to be digits" }).min(1, { message: "Min 1" }).max(2, { message: "Max 2" })
+  status          Boolean  @db.TinyInt @default(true) /// @zod.custom.use(z.boolean({ required_error: "Status is required" }))
   createdDatetime DateTime @default(now()) @map("created_datetime")
   updatedDatetime DateTime @default(now()) @updatedAt @map("updated_datetime")
 
@@ -40,8 +40,10 @@ model Customer {
 
 model Product {
   id    Int    @id @default(autoincrement())
-  name  String @db.VarChar(255) /// @zod.string.min(1, { message: "Name is required." })
-  price Int    @db.Int /// @zod.number({ required_error: "Price is required", invalid_type_error: "APricege needs to be digits" })
+  name  String @db.VarChar(255) /// @zod.string.min(1, { message: "Name is required" })
+  price Int    @db.Int /// @zod.number({ required_error: "Price is required", invalid_type_error: "Price needs to be digits" }).min(1, { message: "Price is required" })
+  createdDatetime DateTime @default(now()) @map("created_datetime")
+  updatedDatetime DateTime @default(now()) @updatedAt @map("updated_datetime")
 
   @@map("product")
 }

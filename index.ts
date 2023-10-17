@@ -8,9 +8,6 @@ import { zodiosApp, zodiosRouter } from '@zodios/express'
 import { openApiBuilder } from '@zodios/openapi'
 import nnnRouter from '@azoom/nnn-router'
 import { generateApis } from '@azoom/api-definition-util'
-import { initializeApp as initializeFirebaseAdmin } from 'firebase-admin/app'
-import { initializeApp as initializeFirebaseClient } from 'firebase/app'
-import { firebaseAuthMiddleware } from '@root/middleware/firebase'
 
 dotenv.config();
 
@@ -22,15 +19,6 @@ express.response.sendStatus = function (statusCode: number) {
   this.send(body)
   return this
 }
-
-initializeFirebaseAdmin({
-  projectId: process.env.FIREBASE_PROJECT_ID
-})
-
-initializeFirebaseClient({
-  apiKey: process.env.FIREBASE_APIKEY,
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
-})
 
 const apis = await generateApis({ routeFolder: 'dist/routes' })
 const expressApp = express()
@@ -47,8 +35,6 @@ app.use(
   express.text(),
   cookie()
 )
-
-app.use(firebaseAuthMiddleware)
 
 app.use(
   nnnRouter({

@@ -3,6 +3,7 @@ node_modules
 # Keep environment variables out of version control
 .env
 service-account.json
+.npmrc
 
 cicd/development/mysql/.data
 lib/zod-follow/schemas

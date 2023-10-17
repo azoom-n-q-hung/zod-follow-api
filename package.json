@@ -1,9 +1,12 @@
 {
   "name": "zod-follow-api",
-  "version": "1.0.0",
+  "version": "1.0.0-coreteam-2",
   "main": "dist/index.js",
   "type": "module",
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azoom-n-q-hung/zod-follow-api.git"
+  },
   "author": "Quoc Hung <n.q.hung@azoom.jp>",
   "private": true,
   "license": "MIT",
@@ -18,19 +21,10 @@
     "lib:build": "yarn azoom-api-definition-util build",
     "lib:publish": "yarn azoom-api-definition-util publish",
     "dev": "concurrently \"tsc --watch\" \"tsc-alias --watch\" \"nodemon -q dist/index.js --exec 'node --es-module-specifier-resolution=node '\"",
-    "start": "node --es-module-specifier-resolution=node dist/index.js",
-    "lint": "eslint --ext .js --ignore-path .gitignore .",
-    "staging:clean": "git fetch origin --prune 'refs/tags/*:refs/tags/*' && git push origin --delete $(git tag -l 'staging-*') || true && git fetch origin --prune 'refs/tags/*:refs/tags/*'",
-    "staging:deploy": "yarn staging:clean && TAG=`echo staging-api-$(date +%Y%m%d-%H%M%S)` && git tag $TAG && git push origin $TAG",
-    "staging:migration": "yarn staging:clean && TAG=`echo staging-migration-$(date +%Y%m%d-%H%M%S)` && git tag $TAG && git push origin $TAG",
-    "preview:clean": "git fetch origin --prune 'refs/tags/*:refs/tags/*' && git push origin --delete $(git tag -l 'preview-*') || true && git fetch origin --prune 'refs/tags/*:refs/tags/*'",
-    "preview:deploy": "yarn preview:clean && TAG=`echo preview-api-$(date +%Y%m%d-%H%M%S)` && git tag $TAG && git push origin $TAG",
-    "preview:migration": "yarn staging:clean && TAG=`echo preview-migration-$(date +%Y%m%d-%H%M%S)` && git tag $TAG && git push origin $TAG",
-    "fetch:tag": "git fetch origin --prune 'refs/tags/*:refs/tags/*' && oldTag=`git tag | grep -e 'migration-v.'` && echo Last tag versions: $oldTag",
-    "product:migration": "yarn fetch:tag && read -p 'Enter number new version: migration-v' version && TAG=`echo migration-v$version` && git push origin --delete $(git tag -l 'migration-v*') && git tag $TAG && git push origin $TAG"
+    "start": "node --es-module-specifier-resolution=node dist/index.js"
   },
   "dependencies": {
-    "@azoom/api-definition-util": "^0.1.1",
+    "@azoom/api-definition-util": "^0.1.9-alpha.0",
     "@azoom/nnn-router": "^1.0.0",
     "@azoom/node-util": "^1.1.1",
     "@prisma/client": "^3.11.1",
@@ -43,17 +37,12 @@
     "cors": "^2.8.5",
     "date-fns": "^2.28.0",
     "dotenv": "^16.0.3",
-    "exceljs": "^4.3.0",
     "express": "^4.17.3",
     "express-promise-router": "^4.1.1",
-    "firebase": "^9.17.2",
-    "firebase-admin": "^11.5.0",
     "got": "^11.8.2",
-    "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.21",
     "statuses": "^2.0.1",
     "swagger-ui-express": "^4.6.2",
-    "wanakana": "^5.1.0",
     "zod": "3.21.1"
   },
   "devDependencies": {
@@ -85,7 +74,8 @@
       "schemaFolder": "lib/zod-follow/schemas",
       "additionalFiles": [
         "lib/zod-follow/schema.ts"
-      ]
+      ],
+      "publishNamespace": "@azoom-n-q-hung"
     }
   }
 }
