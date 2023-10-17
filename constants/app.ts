@@ -1,5 +1,3 @@
-export const aboAdminName = "Abo Admin"
-
 export const defaultCookiesOption = {
   maxAge: 14 * 24 * 60 * 60 * 1000, // maximum 2 weeks,
   httpOnly: true,

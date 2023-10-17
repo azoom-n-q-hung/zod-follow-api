@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import { ResponseSchemas } from '@azoom/api-definition-util'
 import { prisma } from '@root/database'
-import { CustomerSchema } from '@lib/abo'
+import { CustomerSchema } from '@lib/zod-follow'
 
 export const apiDefinition = {
   alias: 'createCustomer',

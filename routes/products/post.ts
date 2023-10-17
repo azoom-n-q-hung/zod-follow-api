@@ -1,32 +1,33 @@
 import { Request, Response } from 'express'
 import { ResponseSchemas } from '@azoom/api-definition-util'
 import { prisma } from '@root/database'
-import { StaffSchema } from '@lib/abo'
+import { ProductSchema } from '@lib/zod-follow'
 
 export const apiDefinition = {
-  alias: 'createStaff',
-  description: 'Create staff',
+  alias: 'createProduct',
+  description: 'Create product',
   parameters: [
     {
-      name: 'staff',
+      name: 'product',
       type: 'Body',
-      description: `Staff`,
-      schema: StaffSchema.omit({
+      description: 'Product',
+      schema: ProductSchema.omit({
         id: true,
-        isEnabled: true,
         createdDatetime: true,
         updatedDatetime: true
       })
     }
   ],
   response: ResponseSchemas[200].schema,
-  errorStatuses: [400, 403]
+  errorStatuses: [400, 403, 404]
 }
 
 export default async (req: Request, res: Response) => {
-  const staffInfo = req.body
+  const product = req.body
 
-  await prisma.staff.create({ data: staffInfo })
+  await prisma.product.create({
+    data: product
+  })
 
   return res.sendStatus(200)
 }

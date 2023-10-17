@@ -63,8 +63,8 @@ app.use((error: Error, req: Request, res: Response, next: NextFunction) => {
 
 const document = openApiBuilder({
   version: process.env.npm_package_version || '',
-  title: 'Abo API',
-  description: 'Abo API'
+  title: 'Zod-Follow API',
+  description: 'Zod-Follow API'
 })
   .addServer({ url: process.env.API_URL || '' })
   .addPublicApi(apis)

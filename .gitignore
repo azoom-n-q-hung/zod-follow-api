@@ -5,8 +5,8 @@ node_modules
 service-account.json
 
 cicd/development/mysql/.data
-lib/abo/schemas
-lib/abo/apis.ts
-lib/abo/dist
-lib/abo/package.json
+lib/zod-follow/schemas
+lib/zod-follow/apis.ts
+lib/zod-follow/dist
+lib/zod-follow/package.json
 dist

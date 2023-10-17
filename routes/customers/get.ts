@@ -10,7 +10,7 @@ import {
   CustomerSchema,
   PaginationSchema,
   SortSchema
-} from '@lib/abo'
+} from '@lib/zod-follow'
 const CustomerQuerySchema = CustomerSchema.pick({
   id: true,
   tel: true

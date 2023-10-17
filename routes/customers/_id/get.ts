@@ -2,7 +2,7 @@ import z from 'zod'
 import { isAfter } from 'date-fns'
 import { Request, Response } from 'express'
 import { prisma } from '@root/database'
-import { CustomerSchema, BookingSchema, BookingDetailSchema } from '@lib/abo'
+import { CustomerSchema, BookingSchema, BookingDetailSchema } from '@lib/zod-follow'
 
 const Booking = BookingSchema.extend({
   bookingDetails: BookingDetailSchema.array()

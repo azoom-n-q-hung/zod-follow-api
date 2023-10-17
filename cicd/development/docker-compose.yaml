@@ -1,20 +1,20 @@
 version: "3.8"
 services:
-  abo-mysql:
+  zod-follow-mysql:
     image: mysql:8
     ports:
-      - "33060:3306"
+      - "33061:3306"
     volumes:
       - ./mysql/.data:/var/lib/mysql
       - ./mysql/initdb:/docker-entrypoint-initdb.d
     environment:
       TZ: "Asia/Tokyo"
-      MYSQL_DATABASE: abo
-      MYSQL_ROOT_PASSWORD: BIyai917L5G5nrHwnQYC1R5S3N8R3iEY
+      MYSQL_DATABASE: zod-follow
+      MYSQL_ROOT_PASSWORD: 123456Aa@
     command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default_authentication_plugin=mysql_native_password
     networks:
-      - abo-network
-    container_name: abo-mysql
+      - zod-follow-network
+    container_name: zod-follow-mysql
 
 networks:
-  abo-network:
+  zod-follow-network:

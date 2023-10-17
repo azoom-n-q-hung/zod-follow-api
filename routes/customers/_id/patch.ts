@@ -2,7 +2,7 @@ import z from 'zod'
 import { Request, Response } from 'express'
 import { ResponseSchemas } from '@azoom/api-definition-util'
 import { prisma } from '@root/database'
-import { CustomerSchema } from '@lib/abo'
+import { CustomerSchema } from '@lib/zod-follow'
 
 const Customer = CustomerSchema.omit({
   id: true,
